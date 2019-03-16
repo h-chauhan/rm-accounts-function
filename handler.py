@@ -4,17 +4,10 @@ from robobrowser import RoboBrowser
 from botocore.exceptions import ClientError
 import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
-import epsagon
 
 sentry_sdk.init(
     "https://b60cf5052e05436597457e63f44b55ab@sentry.io/1412597",
     integrations=[AwsLambdaIntegration()]
-)
-
-epsagon.init(
-    token='b817b19f-3969-4481-8ec0-c7a646dbbb33',
-    app_name='RM Updates',
-    metadata_only=False,
 )
 
 dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
@@ -63,7 +56,6 @@ def findAccount(type):
             if login(type, account):
                 return account
 
-@epsagon.lambda_wrapper
 def handler(event, context):
     try:
         type = event['type']
