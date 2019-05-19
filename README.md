@@ -1,1 +1,1 @@
-"# rm-accounts-function" 
+# rm-accounts-function
