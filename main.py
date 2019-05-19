@@ -1,16 +1,13 @@
-import boto3
 from bs4 import BeautifulSoup
 from robobrowser import RoboBrowser
-from botocore.exceptions import ClientError
 import sentry_sdk
-from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+from sentry_sdk.integrations.serverless import serverless_function
+from google.cloud import firestore
 
-sentry_sdk.init(
-    "https://b60cf5052e05436597457e63f44b55ab@sentry.io/1412597",
-    integrations=[AwsLambdaIntegration()]
-)
+db = firestore.Client()
 
-dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
+
+sentry_sdk.init("https://b60cf5052e05436597457e63f44b55ab@sentry.io/1412597")
 
 getParams = lambda type: {
     "loginUrl": "http://tnp.dtu.ac.in/rm_2016-17/intern/intern_login",
@@ -56,27 +53,16 @@ def findAccount(type):
             if login(type, account):
                 return account
 
-def handler(event, context):
-    try:
-        type = event['type']
-        account = findAccount(type)
-        table = dynamodb.Table('rm-account')
-        try:
-            table.get_item(Key={
-                'type': type
-            })
-            table.delete_item(Key={
-                'type': type
-            })
-        except ClientError:
-            pass
-        table.put_item(Item={
-            'type': type,
-            'username': account['username'],
-            'password': account['password'] 
-        })
-        return account
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
+def handler(request):
+    accounts = {
+        'internship': findAccount('internship'),
+        'placement': findAccount('placement')
+    }
 
-handler({}, {})
+    doc_ref = db.collection(u'accounts').document('internship')
+    doc_ref.set(accounts['internship'])
+    doc_ref = db.collection(u'accounts').document('placement')
+    doc_ref.set(accounts['placement'])
+
+    print('Response Accounts: ', accounts)
+    return str(accounts)
